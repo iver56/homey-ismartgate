@@ -1,0 +1,20 @@
+{
+  "title": {
+    "en": "Door is !{{open|closed}}"
+  },
+  "titleFormatted": {
+    "en": "Door [[doorNumber]] is !{{open|closed}}"
+  },
+  "args": [
+    {
+      "type": "number",
+      "name": "doorNumber",
+      "placeholder": {
+        "en": "1, 2 or 3"
+      },
+      "min": 1,
+      "max": 3,
+      "step": 1
+    }
+  ]
+}

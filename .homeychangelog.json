@@ -1,0 +1,8 @@
+{
+  "1.0.0": {
+    "en": "Initial release with a flow for checking door status"
+  },
+  "1.0.1": {
+    "en": "Fix a bug where it did not detect the door open state correctly"
+  }
+}

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script
+      type="text/javascript"
+      src="/homey.js"
+      data-origin="settings"
+  ></script>
+</head>
+<body>
+<h1 data-i18n="settings.title">
+  <!-- This will be filled with the translated string with key 'settings.title'. -->
+</h1>
+<p data-i18n="settings.subtitle">
+  <!-- This field will also be translated -->
+</p>
+
+<fieldset>
+  <div class="field row">
+    <label for="udi">UDI</label>
+    <input id="udi" type="text" value="" />
+  </div>
+  <div class="field row">
+    <label for="username">Username</label>
+    <input id="username" type="text" value="" />
+  </div>
+  <div class="field row">
+    <label for="password">Password</label>
+    <input id="password" type="password" value="" />
+  </div>
+</fieldset>
+
+<button id="save" class="right">Save changes</button>
+<br>
+<p id="resultLabel"></p>
+
+<script type="text/javascript">
+  function onHomeyReady(Homey) {
+    Homey.ready();
+
+    let usernameElement = document.getElementById("username");
+    let passwordElement = document.getElementById("password");
+    let udiElement = document.getElementById("udi");
+    let saveElement = document.getElementById("save");
+    let resultLabelElement = document.getElementById("resultLabel");
+
+    Homey.get("username", function (err, username) {
+      if (err) return Homey.alert(err);
+      usernameElement.value = username;
+    });
+
+    Homey.get("password", function (err, password) {
+      if (err) return Homey.alert(err);
+      passwordElement.value = password;
+    });
+
+    Homey.get("udi", function (err, udi) {
+      if (err) return Homey.alert(err);
+      udiElement.value = udi;
+    });
+
+    saveElement.addEventListener("click", function (e) {
+      resultLabelElement.innerText = 'Settings have been saved!';
+
+      Homey.set("username", usernameElement.value, function (err) {
+        if (err) {
+          resultLabelElement.innerText = '';
+          return Homey.alert(err);
+        }
+      });
+      Homey.set("password", passwordElement.value, function (err) {
+        if (err) {
+          resultLabelElement.innerText = '';
+          return Homey.alert(err);
+        }
+      });
+      Homey.set("udi", udiElement.value, function (err) {
+        if (err) {
+          resultLabelElement.innerText = '';
+          return Homey.alert(err);
+        }
+      });
+    });
+  }
+</script>
+</body>
+</html>
