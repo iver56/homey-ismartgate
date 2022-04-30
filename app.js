@@ -29,12 +29,16 @@ class ISmartGateApp extends Homey.App {
       }
     }
 
-    const doorIsOpen = this.homey.flow.getConditionCard('door-is-open');
-    doorIsOpen.registerRunListener(async (args) => {
-      const {doorNumber} = args;
+    function parseResponse(xmlStr) {
+      let parser = new fxparser.XMLParser();
+      return parser.parse(xmlStr);
+    }
 
-      getSettings();
+    function isDoorOpen(infoResponseObj, doorNumber) {
+      return infoResponseObj.response[`door${doorNumber}`].status === 'opened';
+    }
 
+    async function executeRequest(commandStr) {
       const aesBlockSize = 16;
 
       const rawToken = `${ISMARTGATE_USERNAME.toLowerCase()}@ismartgate`
@@ -47,8 +51,6 @@ class ISmartGateApp extends Homey.App {
       const sha1HexStr = sha1(ISMARTGATE_USERNAME.toLowerCase() + ISMARTGATE_PASSWORD)
 
       const apiCipherKey = `${sha1HexStr.slice(32, 36)}a${sha1HexStr.slice(7, 10)}!${sha1HexStr.slice(18, 21)}*#${sha1HexStr.slice(24, 26)}`
-
-      const commandStr = `["${ISMARTGATE_USERNAME}", "${ISMARTGATE_PASSWORD}", "info", "", ""]`
 
       const buffer = Buffer.alloc(16);
       uuid.v4({}, buffer);
@@ -82,12 +84,6 @@ class ISmartGateApp extends Homey.App {
         return (decrypted + decipher.final('utf8'));
       }
 
-      function isDoorOpen(xmlStr, doorNumber = 1) {
-        let parser = new fxparser.XMLParser();
-        let obj = parser.parse(xmlStr);
-        return obj.response[`door${doorNumber}`].status === 'opened';
-      }
-
       return await nodeFetch(apiUrl)
         .then((response) => {
           return response.text()
@@ -96,14 +92,37 @@ class ISmartGateApp extends Homey.App {
             throw new Error('Invalid ismartgate username or password. Go to ismartgate settings and make sure your credentials are correct.')
           } else {
             const decryptedXml = decrypt(text);
-            return isDoorOpen(decryptedXml, doorNumber)
+            return parseResponse(decryptedXml);
           }
         }).catch(function() {
           throw new Error('Failed to reach your ismartgate device. The connection may be broken, or the UDI in the ismartgate settings page may be incorrect.')
         });
+
+    }
+
+    const toggleDoorState = this.homey.flow.getActionCard('toggle-door-state');
+    toggleDoorState.registerRunListener(async (args) => {
+      const {doorNumber} = args;
+      getSettings();
+      const infoCommandStr = `["${ISMARTGATE_USERNAME}", "${ISMARTGATE_PASSWORD}", "info", "", ""]`;
+      let infoResponseObj = await executeRequest(infoCommandStr);
+      let apiCode = infoResponseObj.response[`door${doorNumber}`].apicode;
+      const activateCommandStr = `["${ISMARTGATE_USERNAME}", "${ISMARTGATE_PASSWORD}", "activate", "${doorNumber}", "${apiCode}"]`;
+      let activateResponseObj = await executeRequest(activateCommandStr);
+      if (activateResponseObj.response.result !== 'OK') {
+        throw new Error('Failed to activate garage door');
+      }
+    });
+
+    const doorIsOpen = this.homey.flow.getConditionCard('door-is-open');
+    doorIsOpen.registerRunListener(async (args) => {
+      const {doorNumber} = args;
+      getSettings();
+      const commandStr = `["${ISMARTGATE_USERNAME}", "${ISMARTGATE_PASSWORD}", "info", "", ""]`;
+      let infoResponseObj = await executeRequest(commandStr);
+      return isDoorOpen(infoResponseObj, doorNumber);
     })
   }
-
 }
 
 module.exports = ISmartGateApp;

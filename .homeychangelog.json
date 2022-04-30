@@ -4,5 +4,8 @@
   },
   "1.0.1": {
     "en": "Fix a bug where it did not detect the door open state correctly"
+  },
+  "1.1.0": {
+    "en": "Add \"Toggle door state\" flow"
   }
 }
