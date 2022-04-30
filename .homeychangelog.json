@@ -7,5 +7,8 @@
   },
   "1.1.0": {
     "en": "Add \"Toggle door state\" flow"
+  },
+  "1.2.0": {
+    "en": "Add flows \"Open door\" and \"Close door\""
   }
 }

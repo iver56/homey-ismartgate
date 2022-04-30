@@ -97,21 +97,47 @@ class ISmartGateApp extends Homey.App {
         }).catch(function() {
           throw new Error('Failed to reach your ismartgate device. The connection may be broken, or the UDI in the ismartgate settings page may be incorrect.')
         });
+    }
 
+    async function activateDoor(doorNumber, direction) {
+      getSettings();
+      const infoCommandStr = `["${ISMARTGATE_USERNAME}", "${ISMARTGATE_PASSWORD}", "info", "", ""]`;
+      let infoResponseObj = await executeRequest(infoCommandStr);
+      if (isDoorOpen(infoResponseObj, doorNumber)) {
+        if (direction === 'open') {
+          // Door is already open. Do nothing.
+          return;
+        }
+      } else {
+        if (direction === 'close') {
+          // Door is already closed. Do nothing.
+          return;
+        }
+      }
+      let apiCode = infoResponseObj.response[`door${doorNumber}`].apicode;
+      const activateCommandStr = `["${ISMARTGATE_USERNAME}", "${ISMARTGATE_PASSWORD}", "activate", "${doorNumber}", "${apiCode}"]`;
+      let activateResponseObj = await executeRequest(activateCommandStr);
+      if (activateResponseObj.response.result !== 'OK') {
+        throw new Error(`Failed to ${direction} garage door`);
+      }
     }
 
     const toggleDoorState = this.homey.flow.getActionCard('toggle-door-state');
     toggleDoorState.registerRunListener(async (args) => {
       const {doorNumber} = args;
-      getSettings();
-      const infoCommandStr = `["${ISMARTGATE_USERNAME}", "${ISMARTGATE_PASSWORD}", "info", "", ""]`;
-      let infoResponseObj = await executeRequest(infoCommandStr);
-      let apiCode = infoResponseObj.response[`door${doorNumber}`].apicode;
-      const activateCommandStr = `["${ISMARTGATE_USERNAME}", "${ISMARTGATE_PASSWORD}", "activate", "${doorNumber}", "${apiCode}"]`;
-      let activateResponseObj = await executeRequest(activateCommandStr);
-      if (activateResponseObj.response.result !== 'OK') {
-        throw new Error('Failed to activate garage door');
-      }
+      await activateDoor(doorNumber, 'toggle');
+    });
+
+    const openDoor = this.homey.flow.getActionCard('open-door');
+    openDoor.registerRunListener(async (args) => {
+      const {doorNumber} = args;
+      await activateDoor(doorNumber, 'open');
+    });
+
+    const closeDoor = this.homey.flow.getActionCard('close-door');
+    closeDoor.registerRunListener(async (args) => {
+      const {doorNumber} = args;
+      await activateDoor(doorNumber, 'close');
     });
 
     const doorIsOpen = this.homey.flow.getConditionCard('door-is-open');
@@ -121,7 +147,7 @@ class ISmartGateApp extends Homey.App {
       const commandStr = `["${ISMARTGATE_USERNAME}", "${ISMARTGATE_PASSWORD}", "info", "", ""]`;
       let infoResponseObj = await executeRequest(commandStr);
       return isDoorOpen(infoResponseObj, doorNumber);
-    })
+    });
   }
 }
 
