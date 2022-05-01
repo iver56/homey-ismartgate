@@ -12,6 +12,8 @@ class ISmartGateApp extends Homey.App {
     let ISMARTGATE_UDI = null;
     let ISMARTGATE_USERNAME = null;
     let ISMARTGATE_PASSWORD = null;
+    let cachedInfoResponseObj = null;
+    let cachedInfoResponseTime = null;
 
     let that = this;
     function getSettings() {
@@ -27,6 +29,21 @@ class ISmartGateApp extends Homey.App {
       if (!ISMARTGATE_USERNAME) {
         throw new Error("You are not logged in to your ismartgate device. Go to settings and fill in password and other fields.");
       }
+    }
+
+    async function getInfo(maxCacheAgeInSeconds) {
+      let cacheAgeInSeconds = Infinity;
+      if (null !== cachedInfoResponseTime) {
+        cacheAgeInSeconds = ((new Date()) - cachedInfoResponseTime) / 1000;
+      }
+      if (cacheAgeInSeconds < maxCacheAgeInSeconds) {
+        return cachedInfoResponseObj;
+      }
+      getSettings();
+      const infoCommandStr = `["${ISMARTGATE_USERNAME}", "${ISMARTGATE_PASSWORD}", "info", "", ""]`;
+      cachedInfoResponseObj = await executeRequest(infoCommandStr);
+      cachedInfoResponseTime = new Date();
+      return cachedInfoResponseObj;
     }
 
     function parseResponse(xmlStr) {
@@ -99,10 +116,14 @@ class ISmartGateApp extends Homey.App {
         });
     }
 
-    async function activateDoor(doorNumber, direction) {
-      getSettings();
-      const infoCommandStr = `["${ISMARTGATE_USERNAME}", "${ISMARTGATE_PASSWORD}", "info", "", ""]`;
-      let infoResponseObj = await executeRequest(infoCommandStr);
+    async function activateDoor(doorNumber, direction, maxCacheAgeInSeconds=null, allowRetry=true) {
+      if (maxCacheAgeInSeconds === null) {
+        maxCacheAgeInSeconds = 200;
+        if (direction === 'open' || direction === 'close') {
+          maxCacheAgeInSeconds = 2.5;
+        }
+      }
+      let infoResponseObj = await getInfo(maxCacheAgeInSeconds);
       if (isDoorOpen(infoResponseObj, doorNumber)) {
         if (direction === 'open') {
           // Door is already open. Do nothing.
@@ -117,7 +138,10 @@ class ISmartGateApp extends Homey.App {
       let apiCode = infoResponseObj.response[`door${doorNumber}`].apicode;
       const activateCommandStr = `["${ISMARTGATE_USERNAME}", "${ISMARTGATE_PASSWORD}", "activate", "${doorNumber}", "${apiCode}"]`;
       let activateResponseObj = await executeRequest(activateCommandStr);
-      if (activateResponseObj.response.result !== 'OK') {
+      if (allowRetry && activateResponseObj.response.error && activateResponseObj.response.error.errormsg === 'Error: invalid API code') {
+        // API code expired. Fetch new API code and retry.
+        return await activateDoor(doorNumber, direction, 0, false);
+      } else if (activateResponseObj.response.result !== 'OK') {
         throw new Error(`Failed to ${direction} garage door`);
       }
     }
@@ -143,9 +167,7 @@ class ISmartGateApp extends Homey.App {
     const doorIsOpen = this.homey.flow.getConditionCard('door-is-open');
     doorIsOpen.registerRunListener(async (args) => {
       const {doorNumber} = args;
-      getSettings();
-      const commandStr = `["${ISMARTGATE_USERNAME}", "${ISMARTGATE_PASSWORD}", "info", "", ""]`;
-      let infoResponseObj = await executeRequest(commandStr);
+      let infoResponseObj = await getInfo(1);
       return isDoorOpen(infoResponseObj, doorNumber);
     });
   }

@@ -10,5 +10,8 @@
   },
   "1.2.0": {
     "en": "Add flows \"Open door\" and \"Close door\""
+  },
+  "1.2.1": {
+    "en": "Reuse cached door API code for faster door action response time in some cases"
   }
 }
