@@ -13,5 +13,8 @@
   },
   "1.2.1": {
     "en": "Reuse cached door API code for faster door action response time in some cases"
+  },
+  "1.2.2": {
+    "en": "Update app image. Add source link."
   }
 }
