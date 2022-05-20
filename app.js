@@ -16,6 +16,7 @@ class ISmartGateApp extends Homey.App {
     let cachedInfoResponseTime = null;
 
     let that = this;
+
     function getSettings() {
       ISMARTGATE_UDI = that.homey.settings.get('udi');
       if (!ISMARTGATE_UDI) {
@@ -51,8 +52,41 @@ class ISmartGateApp extends Homey.App {
       return parser.parse(xmlStr);
     }
 
+    function assertDoorEnabled(infoResponseObj, doorNumber) {
+      const door = infoResponseObj.response[`door${doorNumber}`];
+      if (!door || door.enabled !== 'yes') {
+        let errorMessage = `Door ${doorNumber} is not enabled.`;
+
+        let enabledDoorNumbers = [];
+        for (let candidateDoorNumber = 1; candidateDoorNumber < 4; candidateDoorNumber++) {
+          let candidateDoor = infoResponseObj.response[`door${candidateDoorNumber}`];
+          if (!!candidateDoor && candidateDoor.enabled === 'yes') {
+            enabledDoorNumbers.push(candidateDoorNumber);
+          }
+        }
+        if (enabledDoorNumbers.length === 1) {
+          errorMessage += ` Door ${enabledDoorNumbers[0]} is the only enabled door.`;
+        } else if (enabledDoorNumbers.length === 0) {
+          errorMessage += ` Your ismartgate device does not have any enabled doors at this time. Please configure it.`;
+        }
+
+        throw new Error(errorMessage);
+      }
+    }
+
     function isDoorOpen(infoResponseObj, doorNumber) {
-      return infoResponseObj.response[`door${doorNumber}`].status === 'opened';
+      const door = infoResponseObj.response[`door${doorNumber}`];
+      assertDoorEnabled(infoResponseObj, doorNumber);
+      return door.status === 'opened';
+    }
+
+    function isTemperatureGreaterThan(infoResponseObj, doorNumber, temperature) {
+      const door = infoResponseObj.response[`door${doorNumber}`];
+      assertDoorEnabled(infoResponseObj, doorNumber);
+      if (typeof door.temperature === 'undefined') {
+        throw new Error('Temperature data is not available. Check if your ismartgate sensor type supports temperature.');
+      }
+      return door.temperature > temperature;
     }
 
     async function executeRequest(commandStr) {
@@ -116,7 +150,7 @@ class ISmartGateApp extends Homey.App {
         });
     }
 
-    async function activateDoor(doorNumber, direction, maxCacheAgeInSeconds=null, allowRetry=true) {
+    async function activateDoor(doorNumber, direction, maxCacheAgeInSeconds = null, allowRetry = true) {
       if (maxCacheAgeInSeconds === null) {
         maxCacheAgeInSeconds = 200;
         if (direction === 'open' || direction === 'close') {
@@ -169,6 +203,13 @@ class ISmartGateApp extends Homey.App {
       const {doorNumber} = args;
       let infoResponseObj = await getInfo(1);
       return isDoorOpen(infoResponseObj, doorNumber);
+    });
+
+    const temperatureIsGreaterThan = this.homey.flow.getConditionCard('temperature-is-greater-than');
+    temperatureIsGreaterThan.registerRunListener(async (args) => {
+      const {doorNumber, temperature} = args;
+      let infoResponseObj = await getInfo(1);
+      return isTemperatureGreaterThan(infoResponseObj, doorNumber, temperature);
     });
   }
 }
