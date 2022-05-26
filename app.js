@@ -80,13 +80,13 @@ class ISmartGateApp extends Homey.App {
       return door.status === 'opened';
     }
 
-    function isTemperatureGreaterThan(infoResponseObj, doorNumber, temperature) {
+    function isTemperatureLessThan(infoResponseObj, doorNumber, temperature) {
       const door = infoResponseObj.response[`door${doorNumber}`];
       assertDoorEnabled(infoResponseObj, doorNumber);
       if (typeof door.temperature === 'undefined') {
         throw new Error('Temperature data is not available. Check if your ismartgate sensor type supports temperature.');
       }
-      return door.temperature > temperature;
+      return door.temperature < temperature;
     }
 
     async function executeRequest(commandStr) {
@@ -205,11 +205,11 @@ class ISmartGateApp extends Homey.App {
       return isDoorOpen(infoResponseObj, doorNumber);
     });
 
-    const temperatureIsGreaterThan = this.homey.flow.getConditionCard('temperature-is-greater-than');
-    temperatureIsGreaterThan.registerRunListener(async (args) => {
+    const temperatureIsLessThan = this.homey.flow.getConditionCard('temperature-is-less-than');
+    temperatureIsLessThan.registerRunListener(async (args) => {
       const {doorNumber, temperature} = args;
       let infoResponseObj = await getInfo(1);
-      return isTemperatureGreaterThan(infoResponseObj, doorNumber, temperature);
+      return isTemperatureLessThan(infoResponseObj, doorNumber, temperature);
     });
   }
 }

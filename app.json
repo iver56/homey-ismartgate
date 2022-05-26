@@ -53,10 +53,10 @@
       },
       {
         "title": {
-          "en": "The temperature is !{{greater than|less than or equal to}}"
+          "en": "The temperature is !{{less than|greater than or equal to}}"
         },
         "titleFormatted": {
-          "en": "The temperature of the sensor for door [[doorNumber]] is !{{greater than|less than or equal to}} [[temperature]] °C"
+          "en": "The temperature of the sensor for door [[doorNumber]] is !{{less than|greater than or equal to}} [[temperature]] °C"
         },
         "hint": {
           "en": "This flow card requires an ismartgate sensor with temperature support (e.g. Wireless Tilt Sensor)."
@@ -83,7 +83,7 @@
             "step": 0.1
           }
         ],
-        "id": "temperature-is-greater-than"
+        "id": "temperature-is-less-than"
       }
     ],
     "actions": [
