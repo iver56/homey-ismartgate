@@ -16,5 +16,8 @@
   },
   "1.2.2": {
     "en": "Update app image. Add source link."
+  },
+  "1.3.0": {
+    "en": "Add support for ismartgate MINI and LITE. Add flow for sensor temperature comparison."
   }
 }
