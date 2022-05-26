@@ -89,6 +89,15 @@ class ISmartGateApp extends Homey.App {
       return door.temperature < temperature;
     }
 
+    function isBatteryLevelLessThan(infoResponseObj, doorNumber, batteryLevel) {
+      const door = infoResponseObj.response[`door${doorNumber}`];
+      assertDoorEnabled(infoResponseObj, doorNumber);
+      if (typeof door.voltage === 'undefined') {
+        throw new Error('Battery voltage data is not available. Check if your ismartgate sensor type has a battery.');
+      }
+      return door.voltage < batteryLevel;
+    }
+
     async function executeRequest(commandStr) {
       const aesBlockSize = 16;
 
@@ -210,6 +219,13 @@ class ISmartGateApp extends Homey.App {
       const {doorNumber, temperature} = args;
       let infoResponseObj = await getInfo(1);
       return isTemperatureLessThan(infoResponseObj, doorNumber, temperature);
+    });
+
+    const batteryLevelIsLessThan = this.homey.flow.getConditionCard('battery-level-is-less-than');
+    batteryLevelIsLessThan.registerRunListener(async (args) => {
+      const {doorNumber, batteryLevel} = args;
+      let infoResponseObj = await getInfo(1);
+      return isBatteryLevelLessThan(infoResponseObj, doorNumber, batteryLevel);
     });
   }
 }
