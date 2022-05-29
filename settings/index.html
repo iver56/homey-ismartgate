@@ -17,8 +17,19 @@
 
 <fieldset>
   <div class="field row">
+    <label for="communicationVia">Communcation via...</label>
+    <select id="communicationVia" onchange="selectedCommunicationViaChanged(this.value)">
+      <option value="remote">Remote access (Easy to set up. Requires internet access.)</option>
+      <option value="lan">Local Area Network (Works when internet access is down. Static IP recommended!)</option>
+    </select>
+  </div>
+  <div class="field row">
     <label for="udi">UDI</label>
     <input id="udi" type="text" value="" />
+  </div>
+  <div class="field row">
+    <label for="localIp">Local IP address</label>
+    <input id="localIp" type="text" value="" />
   </div>
   <div class="field row">
     <label for="username">Username</label>
@@ -41,6 +52,8 @@
     let usernameElement = document.getElementById("username");
     let passwordElement = document.getElementById("password");
     let udiElement = document.getElementById("udi");
+    let localIpElement = document.getElementById("localIp");
+    let communicationViaElement = document.getElementById("communicationVia");
     let saveElement = document.getElementById("save");
     let resultLabelElement = document.getElementById("resultLabel");
 
@@ -58,6 +71,10 @@
       if (err) return Homey.alert(err);
       udiElement.value = udi;
     });
+
+    communicationViaElement.addEventListener('change', function(e) {
+      //TODO
+    })
 
     saveElement.addEventListener("click", function (e) {
       resultLabelElement.innerText = 'Settings have been saved!';
