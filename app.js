@@ -93,7 +93,7 @@ class ISmartGateApp extends Homey.App {
       const door = infoResponseObj.response[`door${doorNumber}`];
       assertDoorEnabled(infoResponseObj, doorNumber);
       if (typeof door.voltage === 'undefined') {
-        throw new Error('Battery voltage data is not available. Check if your ismartgate sensor type has a battery.');
+        throw new Error('Battery voltage data is not available. Check if your ismartgate sensor has a battery.');
       }
       return door.voltage < batteryLevel;
     }
