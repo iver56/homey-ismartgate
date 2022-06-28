@@ -19,5 +19,8 @@
   },
   "1.3.0": {
     "en": "Add support for ismartgate MINI and LITE. Add flow for sensor temperature comparison."
+  },
+  "1.4.0": {
+    "en": "Add battery level flow. Add donation button. Add setup instructions."
   }
 }
